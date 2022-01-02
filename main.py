@@ -311,7 +311,7 @@ def update_graph(n_clicks, mot, nb_points, source):
     fig.update_yaxes(showticklabels = False)
     
     #On sauvegarde la figure au format html
-    py.plot(fig, filename='word_network.html')
+    #py.plot(fig, filename='word_network.html')
     
     return fig
 
