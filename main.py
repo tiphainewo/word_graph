@@ -3,7 +3,7 @@ import networkx as nx
 import plotly.offline as py
 import plotly.graph_objects as go
 
-#Récupération Arxiv et twitter
+#Récupération Arxiv et Twitter
 from datetime import datetime
 import urllib, xmltodict
 from classes import TwitterDoc, ArxivDoc, Corpus
@@ -12,31 +12,26 @@ import tweepy
 
 #App
 import dash
-from dash import dcc
-from dash import html
-from dash import Dash, dcc, html, Input, Output, State
+from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
-
 
 
 def get_data(word, nb_points, source):
     
-    '''Récupère les données relatives au mot 
-        Parameters
-        ----------
-        x    : a tuple of the endpoints' x-coordinates in the form, tuple([x0, x1, None])
-        y    : a tuple of the endpoints' y-coordinates in the form, tuple([y0, y1, None])
-        width: the width of the line
-        Returns
-        -------
-        An edge trace that goes between x0 and x1 with specified width.
-        '''
+    '''Récupère les données relatives au mot donné sur un site
+        Paramètres :
+            word : string, le mot à chercher
+            nb_points : int, le nombre de points sur le graphe, correspondant au nombre de mots à afficher
+            source : string, source des données, twitter ou arxiv
         
-        
+        Returns :
+            motsFreq : dataframe des mots les plus fréquemment présents avec word pour la source donnée
+    '''       
+    
+    #Traitement différent des données selon la source
     if (source=="arxiv"):
         # ================== Extraction des documents ==================== #
         arxivCorpus = Corpus("ArXiv")
-        #recup data de Arxiv
         query_term = word
         
         # Requête
@@ -63,6 +58,9 @@ def get_data(word, nb_points, source):
         
         # ================ Récupération des tweets récents via l'API ================ #
         client = tweepy.Client(bearer_token='AAAAAAAAAAAAAAAAAAAAAOOVXgEAAAAA2DJBmFtV5IcuFRsw6rWa0rbeBg8%3DPScLyXvrrvStd84C0F8q44D4LF1SDeoVyOd6NjUVSKeAY07INL')
+        
+        #Pour simplifier la recherche, celle-ci prend en compte uniquement les tweets en anglais et qui ne 
+        #sont pas des retweets
         query = word+' -is:retweet lang:en'
         tweets = client.search_recent_tweets(query=query, tweet_fields=['created_at','author_id','id'], max_results=100)
         
@@ -75,11 +73,25 @@ def get_data(word, nb_points, source):
             twitterCorpus.add(TwitterDoc(tweet.text.replace("\n", ""), time, tweet.author_id, tweet.id))  
             
         motsFreq = twitterCorpus.motsFrequents(nb_points)
-        
-    motsFreq.to_excel("motsFrequents.xlsx")
+    
+    #Sauvegarde possible des mots fréquents en excel pour vérifier les résultats
+    #motsFreq.to_excel("motsFrequents.xlsx")
     return (motsFreq)
 
+
 def create_graph(word, points,source):
+    
+    '''Crée les bases du graphe
+        Paramètres :
+            word : string, le mot à chercher
+            nb_points : int, le nombre de points sur le graphe, correspondant au nombre de mots à afficher
+            source : string, source des données, twitter ou arxiv
+        
+        Returns :
+            node_trace : les points du graphe
+            edge_trace : les arrêtes reliant les points du graphe
+    ''' 
+    
     motsFrequents=get_data(word,points,source)
     
     #Création du graphe
@@ -115,8 +127,15 @@ def create_graph(word, points,source):
                 graph.add_edge(indexj, indexi, weight = coOccurence[indexj][indexi])
             
     
-    #On place les différents points selon une forme, ici le spring_layout
+    #On place les différents points selon une motif,  ici le spring layout calculé selon une formule mathématique
     pos_ = nx.spring_layout(graph)
+    
+    
+    '''
+    La partie de code suivante a été reprise de ce projet github.com/rweng18/midsummer_network
+    Cette partie permet de placer tracer les points du graphe et leurs arrêtes
+    J'ai uniquement modifié ce code pour ajouter une taille de point maximale
+    '''
     
     def make_edge(x, y, text, width):
         
@@ -194,13 +213,18 @@ def create_graph(word, points,source):
             node_trace['marker']['size'] += tuple([graph.nodes()[node]['size']])
         else :
             node_trace['marker']['size'] += tuple([3*graph.nodes()[node]['size']])
-        node_trace['text'] += tuple(['<b>' + node + '</b>'])     
+        node_trace['text'] += tuple(['<b>' + node + '</b>'])   
+        
+    '''
+    Fin du code repris du projet github.com/rweng18/midsummer_network
+    '''
         
     return([edge_trace, node_trace])
 
 
 # ================= Création de l'application graphique ====================== #
 app= dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+app.title = "Collocations"
 
 app.layout = html.Div([
     html.H2(id="titre", style={'text-align':"center"},children=["Graphe des termes liés à : "]),
@@ -258,6 +282,16 @@ app.layout = html.Div([
 )
 def update_graph(n_clicks, mot, nb_points, source):
     
+    '''Met le graphe à jour quand on appuie sur le bouton Valider
+        Paramètres :
+            n_clicks : nombre de fois où le bouton a été cliqué, sert à détecter le clic
+            mot : mot entré par l'utilisateur pour mettre à jour le graphe
+            nb_points : le nombre de points sur le graphe, correspondant au nombre de mots à afficher
+            source : source des données, twitter ou arxiv
+        
+        Returns :
+            fig : la nouvelle figure mise à jour 
+    '''   
     #Tracage du graphe
     layout = go.Layout(
         paper_bgcolor='rgba(0,0,0,0)',
@@ -286,9 +320,19 @@ def update_graph(n_clicks, mot, nb_points, source):
     Input('okay','n_clicks'),
     State('type_word','value')    
 )
-def update_title(n_clicks, value):
-    return "Graphe des termes liés à : {}".format(value)
+def update_title(n_clicks, mot):
+    
+    '''Met le titre de la page à jour en fonction de la recherche
+        Paramètres :
+            n_clicks : nombre de fois où le bouton a été cliqué, sert à détecter le clic
+            mot : mot entré par l'utilisateur pour mettre à jour le graphe
+        
+        Returns :
+            str : le nouveau titre avec le mot recherché
+    '''   
+    
+    return "Graphe des termes liés à : {}".format(mot)
 
-# --------------------------
+# Lance l'application Dash
 if __name__ == '__main__':
     app.run_server(debug=False, dev_tools_hot_reload=False)

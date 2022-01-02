@@ -1,5 +1,4 @@
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import nltk
 nltk.download('stopwords')
@@ -12,7 +11,6 @@ class Document:
         self.content = content;
         self.date = date;
         self.typeDoc = typeDoc;
-        
     
         
 class TwitterDoc(Document):
@@ -40,16 +38,42 @@ class Corpus:
         self.docs={}
         
     def add(self, doc):
+        '''
+        Ajoute un document au corpus
+        Parameters
+        ----------
+        doc : Document, document à ajouter
+
+        Returns
+        -------
+        None.
+
+        '''
         self.nbDocs += 1
         self.docs[self.nbDocs] = doc
         
     def display(self):
+        '''
+        Affiche le corpus
+
+        Returns
+        -------
+        None.
+
+        '''
         for doc in self.docs:     
             print(doc,". ",self.docs[doc])
             
              
-    #Nettoie chaque texte en mettant tout en minuscule et en enlevant la ponctuation
     def nettoyerTextes(self):
+        '''
+        Nettoie chaque texte en mettant tout en minuscule, en enlevant la ponctuation et les mots dénués de sens
+
+        Returns
+        -------
+        None.
+
+        '''
         for doc in self.docs:
             cleanText = self.docs[doc].content   
             cleanText= cleanText.lower()
@@ -73,11 +97,21 @@ class Corpus:
             cleanText=re.sub(r'https',' ',cleanText)
 
             self.docs[doc].content = cleanText
-    
-    #renvoie les n mots les plus fréquents avec leur fréquence et les documents dans lesquels
-    #ils apparaissent
-    # n : nbr de mots les plus fréquents à chercher
+
     def motsFrequents(self,n):
+        '''
+        renvoie les n mots les plus fréquents avec leur fréquence et les documents dans lesquels
+        ils apparaissent
+
+        Parameters
+        ----------
+        n : int, nbr de mots les plus fréquents à chercher
+
+        Returns
+        -------
+        None.
+
+        '''
         self.nettoyerTextes()
         voc = pd.DataFrame(None, columns=["mot","freq","docs"])
         for key in self.docs:
