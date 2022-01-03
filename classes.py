@@ -1,4 +1,5 @@
 import re
+from abc import ABC, abstractmethod
 import pandas as pd
 import nltk
 nltk.download('stopwords')
@@ -6,13 +7,19 @@ nltk.download('punkt')
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-class Document:
+#Classe abstraite
+class Document(ABC):
     def __init__(self, content="", date="", typeDoc=""):
         self.content = content;
         self.date = date;
         self.typeDoc = typeDoc;
     
-        
+    @abstractmethod
+    def __str__(self):
+        pass
+    
+
+#Classe héritant de Document        
 class TwitterDoc(Document):
     def __init__(self, content="", date="", author="", tweetId=""):
         super().__init__(content, date, "twitter");
@@ -21,7 +28,8 @@ class TwitterDoc(Document):
         
     def __str__(self):
         return(self.content)
-        
+
+#Classe héritant de Document        
 class ArxivDoc(Document):
     def __init__(self, content="", date="", authors="", title=""):
         super().__init__(content, date, "arxiv");
@@ -122,8 +130,8 @@ class Corpus:
                 for mot in mots_doc:
                     #On récupère la ligne correspondant à ce mot, si elle existe
                     index=voc.index[voc["mot"]==mot]
-                    #On vérifie s'il existe déjà une ligne correspondant au mot, grace à son index
                     
+                    #On vérifie s'il existe déjà une ligne correspondant au mot, grace à son index
                     if (index.asi8== None or index.asi8.shape==(0,)):
                         #docsList=[self.docs[key].title]
                         docsList={doc.title : 1}
@@ -182,6 +190,7 @@ class Corpus:
         #Correspond aux urls présents dans les tweets
         voc = voc.drop(voc[voc.mot=="t"].index)
         voc = voc.drop(voc[voc.mot=="co"].index)
+        voc = voc.drop(voc[voc.mot=="amp"].index)
         
         voc = voc.sort_values("freq", ascending=False)
         

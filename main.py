@@ -75,7 +75,7 @@ def get_data(word, nb_points, source):
         motsFreq = twitterCorpus.motsFrequents(nb_points)
     
     #Sauvegarde possible des mots fréquents en excel pour vérifier les résultats
-    #motsFreq.to_excel("motsFrequents.xlsx")
+    motsFreq.to_excel("motsFrequents.xlsx")
     return (motsFreq)
 
 
@@ -242,7 +242,7 @@ app.layout = html.Div([
         html.Div(
         [
             dbc.Label("Nombre de points", html_for="nb_points"),
-            dbc.Input(id="nb_points", type='number', min=5, max=30, value="10"),
+            dbc.Input(id="nb_points", type='number', min=5, value="10"),
         ],
             className="flex-grow-2"
         ),
@@ -301,9 +301,11 @@ def update_graph(n_clicks, mot, nb_points, source):
     
     fig = go.Figure(layout = layout)
     
+    #On trace les arrêtes
     for trace in graph_trace[0]:
         fig.add_trace(trace)
     
+    #On trace les points du graphe
     fig.add_trace(graph_trace[1])
     
     fig.update_layout(showlegend = False)
