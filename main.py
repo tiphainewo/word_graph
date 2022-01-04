@@ -1,6 +1,5 @@
 #Graphe
 import networkx as nx
-import plotly.offline as py
 import plotly.graph_objects as go
 
 #Récupération Arxiv et Twitter
@@ -312,8 +311,6 @@ def update_graph(n_clicks, mot, nb_points, source):
     fig.update_xaxes(showticklabels = False)
     fig.update_yaxes(showticklabels = False)
     
-    #On sauvegarde la figure au format html
-    #py.plot(fig, filename='word_network.html')
     
     return fig
 
